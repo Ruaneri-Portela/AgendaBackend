@@ -89,6 +89,9 @@ function processSucefull($code = -1, $additional = "", $name = "additional")
         case 5:
             $data["msg"] = "Login sucessulf ";
             break;
+        case 6:
+            $data["msg"] = "Logout sucessulf";
+            break;
         default:
             $data["msg"] = "Unknown";
             break;

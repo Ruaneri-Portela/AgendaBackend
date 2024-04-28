@@ -13,7 +13,7 @@ function info()
     );
     if (isset($_POST["json"])) {
         $jsondata = json_decode($_POST["json"], true);
-        if ($jsondata["token"]) {
+        if (isset($jsondata["token"])) {
             $db = new database;
             $tokenInfo = $db->consultUserToken($jsondata["token"]);
             if ($tokenInfo == null) {

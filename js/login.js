@@ -1,4 +1,4 @@
-checkLogin("", "./index.html");
+checkLogin("", indexDocument);
 const btn = document.getElementById("btnLogin");
 const username = document.getElementById("username");
 const password = document.getElementById("password");
@@ -8,18 +8,11 @@ async function btnAction() {
         alert("Please enter your username and password!");
         return;
     }
-    const response = await querySchedule({ "user": username.value, "password": password.value, "permanent": isSession.checked }, "login");
-    if (response["type"] == "success") {
-        if (!isSession.checked) {
-            sessionStorage.setItem("token", response["token"]);
-        } else {
-            localStorage.setItem("token", response["token"]);
-        }
-        alert("Login successful");
-        window.location.href = "index.html";
-        return;
+    if (await login(username.value, password.value, isSession.checked)) {
+        window.location.href = indexDocument;
     } else {
-        alert("Login failed");
+        alert("Incorrect username or password!");
     }
+
 }
 btn.addEventListener("click", btnAction);

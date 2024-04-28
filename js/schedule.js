@@ -1,7 +1,26 @@
-async function querySchedule(data, type) {
+const url = "http://192.168.0.253:8080/api/";
+const loginDocument = "login.html";
+const indexDocument = "index.html";
+
+function preProcessResponse(data) {
+    if (data["type"] == "error" && data["code"] == 15) {
+        checkLogin(loginDocument, "")
+    }
+}
+
+function getToken() {
     var value = localStorage.getItem("token");
     value != null ? value = value : value = sessionStorage.getItem("token");
-    const parserData = { ...data, "token": value };
+    return value;
+}
+
+async function queryServer(data, type, functionPreCall = preProcessResponse) {
+    const token = getToken();
+    var tokenArray = {};
+    if (token != null) {
+        tokenArray = { "token": token };
+    }
+    const parserData = { ...data, ...tokenArray };
     const requestOptions = {
         method: 'POST',
         headers: {
@@ -12,96 +31,58 @@ async function querySchedule(data, type) {
         })
     };
     try {
-        const response = await fetch("http://192.168.0.253:8080/api/" + type, requestOptions);
+        const response = await fetch(url + type, requestOptions);
         const reply = await response.json();
-        if (reply["type"] == "error" && reply["code"] == 15) {
-            checkLogin("login.html", "")
-        }
+        functionPreCall(reply);
         return reply;
     } catch (error) {
         console.error('Erro:', error);
     }
 }
 
-async function getInfo() {
-    const data = await querySchedule({}, "info");
-    var info = document.getElementById("footer");
-    var text = "<br>Server Info:<br><p>";
-    for (element in data["info"]) {
-        if (!(element == '0')) {
-            text = text + element + ": " + data["info"][element] + "<br>";
-        }
-    }
-    for (element in data["info"][0]) {
-        text = text + element + ": " + data["info"][0][element] + "<br>";
-    }
-    text = text + "</p>";
-    info.innerHTML = text;
-}
-
-async function deleteScheduleBtn(id) {
-    const response = await querySchedule({ "id": id }, "delete");
+async function login(username, password, isSession) {
+    const response = await queryServer({ "user": username, "password": password, "permanent": isSession }, "login");
     if (response["type"] == "success") {
-        alert("Schedule deleted successfully");
-        genTable();
-        return;
+        if (!isSession) {
+            sessionStorage.setItem("token", response["token"]);
+        } else {
+            localStorage.setItem("token", response["token"]);
+        }
+        return true;
+    } else {
+        return false;
     }
-    alert("Error deleting schedule\n" + response["msg"] + "\nPlease try again");
 }
 
-async function scheduleBtn(id, room, start, end, user, reason, mode) {
-    var fail = true;
-    var response = null;
-    while (true) {
-        if (room == "" || start == "" || end == "" || reason == "") {
-            break;
-        }
-        if (mode == "add" && !(user == "")) {
-            response = await querySchedule({ "room": room, "timestampStart": start, "timestampEnd": end, "userId": user, "reason": reason }, "create");
-            fail = false;
-            break;
-        }
-        if (mode == "edit" && !(id == "")) {
-            response = await querySchedule({ "id": id, "room": room, "timestampStart": start, "timestampEnd": end, "userId": user, "reason": reason }, "edit");
-            fail = false;
-            break;
-        }
-        break;
-    }
-    if (fail) {
-        alert("Please fill all fields");
-        return;
-    }
-    if (response != null && response["type"] == "success") {
-        alert("Schedule created successfully");
-        genTable();
-        return;
-    }
-    alert("Error creating schedule\n" + response["msg"] + "\nPlease try again");
-}
 
 async function checkLogin(targetFail = "", targetSucefull = "") {
     while (true) {
-        var value = localStorage.getItem("token");
-        value != null ? value = value : value = sessionStorage.getItem("token");
-        if (value == null) {
+        const token = getToken();
+        if (token == null)
             break;
-        }
-        var status = await querySchedule({ "token": value }, "info")
+        const status = await queryServer({}, "info")
         if (status["info"][0]["loginStatus"] == 0) {
-            logout();
+            logout(loginDocument);
             break;
         }
         if (targetSucefull != "")
             window.location.href = targetSucefull;
-        return;
+        return true;
     }
     if (targetFail != "")
         window.location.href = targetFail;
+    return false;
 }
 
-function logout() {
-    localStorage.removeItem("token");
-    sessionStorage.removeItem("token");
-    window.location.href = "login.html";
+async function logout(targetSucefull = "") {
+    const response = await queryServer({}, "logout");
+    if (response["type"] == "success") {
+        localStorage.removeItem("token");
+        sessionStorage.removeItem("token");
+        if (targetSucefull != "")
+            window.location.href = targetSucefull;
+        return true;
+    }
+    alert("Error logout!")
+    return false;
 }

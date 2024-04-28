@@ -1,3 +1,67 @@
+checkLogin(loginDocument, "");
+
+const btnLogout = document.getElementById("logout");
+btnLogout.addEventListener("click", function () {
+    logout(loginDocument)
+});
+
+async function getInfo() {
+    const data = await queryServer({}, "info");
+    var info = document.getElementById("footer");
+    var text = "<br>Server Info:<br><p>";
+    for (element in data["info"]) {
+        if (!(element == '0')) {
+            text = text + element + ": " + data["info"][element] + "<br>";
+        }
+    }
+    for (element in data["info"][0]) {
+        text = text + element + ": " + data["info"][0][element] + "<br>";
+    }
+    text = text + "</p>";
+    info.innerHTML = text;
+}
+
+async function deleteScheduleBtn(id) {
+    const response = await queryServer({ "id": id }, "delete");
+    if (response["type"] == "success") {
+        alert("Schedule deleted successfully");
+        genTable();
+        return;
+    }
+    alert("Error deleting schedule\n" + response["msg"] + "\nPlease try again");
+}
+
+async function scheduleBtn(id, room, start, end, user, reason, mode) {
+    var fail = true;
+    var response = null;
+    while (true) {
+        if (room == "" || start == "" || end == "" || reason == "") {
+            break;
+        }
+        if (mode == "add" && !(user == "")) {
+            response = await queryServer({ "room": room, "timestampStart": start, "timestampEnd": end, "userId": user, "reason": reason }, "create");
+            fail = false;
+            break;
+        }
+        if (mode == "edit" && !(id == "")) {
+            response = await queryServer({ "id": id, "room": room, "timestampStart": start, "timestampEnd": end, "userId": user, "reason": reason }, "edit");
+            fail = false;
+            break;
+        }
+        break;
+    }
+    if (fail) {
+        alert("Please fill all fields");
+        return;
+    }
+    if (response != null && response["type"] == "success") {
+        alert("Schedule created successfully");
+        genTable();
+        return;
+    }
+    alert("Error creating schedule\n" + response["msg"] + "\nPlease try again");
+}
+
 function fillButtonTableElement(id) {
     const buttons = ["Delete", "Edit"];
     for (var i = 0; i < buttons.length; i++) {
@@ -96,7 +160,7 @@ async function genTable() {
         tr.appendChild(document.createElement("th")).appendChild(document.createTextNode(labels[i]));
     }
     thead.appendChild(tr);
-    var schedules = await querySchedule({ "room": "*", "timestampStart": "2024-01-01 00:00:00", "timestampEnd": "*", "userId": "*", }, "search");
+    var schedules = await queryServer({ "room": "*", "timestampStart": "2024-01-01 00:00:00", "timestampEnd": "*", "userId": "*", }, "search");
     if (schedules["type"] != "error") {
         var list = schedules["list"]["result"];
         for (element in list) {
@@ -122,8 +186,5 @@ async function genTable() {
     id.appendChild(table);
 }
 
-checkLogin("./login.html", "");
 getInfo();
 genTable();
-const btnLogout = document.getElementById("logout");
-btnLogout.addEventListener("click", logout);

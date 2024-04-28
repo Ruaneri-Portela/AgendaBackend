@@ -2,7 +2,6 @@
 include "assets/db.php";
 include "assets/entry.php";
 include "assets/parser.php";
-$_POST["json"] = '{"user":"master","password":"90908585"}';
 function genToken($size)
 {
     $chars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$%^&*()_-=+;:,.?";

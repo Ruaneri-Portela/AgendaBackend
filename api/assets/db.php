@@ -3,8 +3,8 @@ class database
 {
     private $host = "localhost";
     private $dbName = "agendamento";
-    private $username = "root";
-    private $password = "90908585";
+    private $username = "agendamento";
+    private $password = "40405050";
     private $scheduleTable = "agendamentos";
     private $usersTable = "users";
     private $tokensTable = "tokens";
@@ -206,6 +206,21 @@ class database
             $stmt->execute();
             $stmt->close();
             return $this->conn->insert_id;
+        } else
+            return -1;
+    }
+
+    public function unregisterUserToken($token){
+        if (strlen($token) != 64)
+            return -2;
+        $query = "DELETE FROM " . $this->tokensTable . " WHERE token = ?";
+        $stmt = $this->conn->prepare($query);
+        if ($stmt) {
+            $stmt->bind_param("s", $token);
+            $stmt->execute();
+            $result = $stmt->affected_rows;
+            $stmt->close();
+            return $result;
         } else
             return -1;
     }
